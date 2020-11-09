@@ -10,7 +10,6 @@ public class XmlTreeView {
             "JOIN", "GROUP", "ORDER", "MAX", "MIN", "SUM", "COUNT", "ASC", "DESC"
     };
 
-        //metoda getLeafPaths projde xml a ziska nazvy vsech tagu a vytvori z nich cesty
     public static void getLeafPaths(Element elem, StringBuilder path, ArrayList<String> pathsInTree) {
         final int pathLen = path.length();
         if (pathLen != 0)
@@ -20,7 +19,7 @@ public class XmlTreeView {
         if(elem.getTagName().equals("specialWord")){
             String str = elem.getTextContent();
             if(str != null && checkSearchedWords(str))
-                path.append(str);       //prida se cely text v elementu k ceste
+                path.append(str);
         }
 
         boolean hasChild = false;

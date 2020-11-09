@@ -1,24 +1,36 @@
 package cz.vsb.application.processors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import cz.vsb.application.selects.SelectWithPathNum;
 import cz.vsb.application.selects.SelectWithPaths;
 import cz.vsb.application.selects.SelectWithSimilarity;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 
 public class SimilarityCalculator{
 
-    private SelectWithPaths selectWithPaths;
+    private SelectWithPathNum selectWithPathNum;
+    private String line;
     private ArrayList<String> inputPaths;
     private HashSet<String> inputHash = new HashSet<>();
     private HashSet<String> fileHash = new HashSet<>();
     private HashSet<String> totalHash = new HashSet<>();
 
-    public SimilarityCalculator(SelectWithPaths selectWithPaths, ArrayList<String> input){
+    public SimilarityCalculator(String line, ArrayList<String> input){
+        this.line = line;
         this.inputPaths = input;
-        this.selectWithPaths = selectWithPaths;
     }
 
     public SelectWithSimilarity calculate() {
+
+        ObjectMapper mapper = new ObjectMapper();   //mapper is for conversion from json to object
+        try {
+            selectWithPathNum = mapper.readValue(line, SelectWithPathNum.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         prepareHashSets();
 
@@ -29,7 +41,7 @@ public class SimilarityCalculator{
                 intersection++;
         }
 
-        SelectWithSimilarity selectWithSimilarity = new SelectWithSimilarity(selectWithPaths.getQuery(), ((double)intersection / (double) totalHash.size()) * 100);
+        SelectWithSimilarity selectWithSimilarity = new SelectWithSimilarity(selectWithPathNum.getSelect(), (double)intersection / (double) totalHash.size());
 
         totalHash = null;
         inputHash = null;
@@ -47,7 +59,7 @@ public class SimilarityCalculator{
             totalHash.add(s+i);
         }
 
-        for(String s : selectWithPaths.getPaths()){
+        for(String s : selectWithPathNum.getPathsWithNums()){
             int i = 0;
             while(fileHash.contains(s+i)){
                 i++;

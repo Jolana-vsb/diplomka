@@ -9,7 +9,7 @@ public class InputFileReader {
 
     public static Stream<String> readFile(String path){
         try {
-            return Files.lines(Paths.get(path)).parallel(); //paralel nastavi aby stream pracoval paralelne se zaznamy a nacte paralelne soubor (radky) a cokoli se pak provadi se streamem se provede paralelne
+            return Files.lines(Paths.get(path)).parallel();
         } catch (IOException e) {
             e.printStackTrace();
         }

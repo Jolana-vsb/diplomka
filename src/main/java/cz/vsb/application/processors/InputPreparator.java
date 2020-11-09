@@ -1,5 +1,7 @@
 package cz.vsb.application.processors;
 
+import cz.vsb.database.Path;
+import cz.vsb.database.PathDAO;
 import cz.vsb.grammars.*;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ConsoleErrorListener;
@@ -21,8 +23,13 @@ import static org.antlr.v4.runtime.CharStreams.fromString;
 
 public class InputPreparator {
 
-    private static ArrayList<String> inputPaths = new ArrayList<>();
+    private static ArrayList<String> inputPathsNum = new ArrayList<>();
 
+    /**
+     * Prepares input for defined query and grammar. Gets the derivative tree for query and gets the query paths.
+     * @param query
+     * @param grammar
+     */
     public static void prepareInput(String query, int grammar){
         ParseTree parseTree = null;
         Parser parser = null;
@@ -51,8 +58,8 @@ public class InputPreparator {
 
         if(parseTree != null && parser.getNumberOfSyntaxErrors() == 0){
             ResultPreparator resultPreparator = new ResultPreparator();
-            resultPreparator.prepareData(query, parseTree, parser); //vytvoreni xml z inputu
-            prepareInputPaths(resultPreparator.getXmlData());       //vytvoreni cest z xml inputu
+            resultPreparator.prepareData(query, parseTree, parser);
+            prepareInputPaths(resultPreparator.getXmlData());
         }
     }
 
@@ -61,12 +68,34 @@ public class InputPreparator {
         parser.removeErrorListener(ConsoleErrorListener.INSTANCE);
     }
 
+    /**
+     * Makes paths for input derivation tree. Adds them into a variable list <code>inputPaths</code>.
+     * Gets a unique number for each path and adds them into variable list <code>inputPathsNum</code>.
+     * @param xmlTree
+     */
     private static void prepareInputPaths(String xmlTree){
         DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
         try {
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Document document = dBuilder.parse(new InputSource(new StringReader(xmlTree)));     //v pameti se vytvori dokument xml
+            Document document = dBuilder.parse(new InputSource(new StringReader(xmlTree)));
+            ArrayList<String> inputPaths = new ArrayList<>();
             XmlTreeView.getLeafPaths((Element)(document.getElementsByTagName("sqlStatement").item(0)), new StringBuilder(), inputPaths);
+
+            Integer num;
+            Integer maxNum = PathDAO.selectMaxID()+1;
+
+            for(String strPath : inputPaths){
+                Path path = PathDAO.select(strPath);
+                if(path != null){
+                    num = path.getPathID();
+                }
+                else{
+                    num = maxNum;
+                    maxNum++;
+                }
+
+                inputPathsNum.add(num.toString());
+            }
         } catch (ParserConfigurationException e) {
             e.printStackTrace();
         } catch (SAXException e) {
@@ -77,6 +106,6 @@ public class InputPreparator {
     }
 
     public static ArrayList<String> getInputPaths(){
-        return inputPaths;
+        return inputPathsNum;
     }
 }
