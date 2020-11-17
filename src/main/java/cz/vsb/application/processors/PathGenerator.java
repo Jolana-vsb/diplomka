@@ -1,77 +1,79 @@
 package cz.vsb.application.processors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import cz.vsb.application.files.PathFileWriter;
-import cz.vsb.application.selects.SelectWithPathNum;
-import cz.vsb.application.selects.SelectWithTree;
+import cz.vsb.application.selects.SelectWithPaths;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class PathGenerator {
-    /**
-     * Writes the query and path numbers for each query into a file. On each line.
-     * @param selectWithTree
-     * @param pathsMap
-     */
-    private static void writeToFile(SelectWithTree selectWithTree, PathsMap pathsMap) {
-        ArrayList<String> pathsInTree = new ArrayList<>();
-        XmlTreeView.getLeafPaths(selectWithTree.getElement(), new StringBuilder(), pathsInTree);
-        Integer num = null;
-        ArrayList<String> pathsWithNums = new ArrayList<>();
 
-        synchronized (pathsMap){
-            for(String path : pathsInTree){
-                if(pathsMap.pathsWithNums.containsKey(path)){
-                    num = pathsMap.pathsWithNums.get(path);
+    private static int mainTagLength = "</sqlSelects>".length();
+    public static DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 
+    private static void writeToFile(ArrayList<SelectWithPaths> selectsWithPaths, PathsMap pathsMap) {
+        StringBuilder strTofile = new StringBuilder();
+
+        for(SelectWithPaths selectWithPaths : selectsWithPaths){
+            HashSet<String> selectPahts = new HashSet<>();
+            strTofile.append(selectWithPaths.getId() + "|sep|" + selectWithPaths.getQuery() + "|sep|");
+            Integer num = null;
+
+            for(String s : selectWithPaths.getPaths()){
+                int i = 0;
+
+                while(selectPahts.contains(s + "." + i))
+                    i++;
+
+                synchronized (pathsMap){
+                    if(pathsMap.pathsWithNums.containsKey(s + "." + i)){
+                        num = pathsMap.pathsWithNums.get(s + "." + i);
+
+                    }
+                    else{
+                        pathsMap.pathsWithNums.put(s + "." + i, pathsMap.pathNum);
+                        num = pathsMap.pathNum;
+                        pathsMap.pathNum++;
+                    }
                 }
-                else{
-                    pathsMap.pathsWithNums.put(path, pathsMap.pathNum);
-                    num = pathsMap.pathNum;
-                    pathsMap.pathNum++;
-                }
-                pathsWithNums.add(num.toString());
+
+                selectPahts.add(s + "." + i);
+                strTofile.append(num + ",");
             }
+            strTofile.append("\n");
         }
 
-
-        ObjectMapper mapper = new ObjectMapper();
-
-        SelectWithPathNum selectWithPathNum = new SelectWithPathNum(selectWithTree.getQuery(), pathsWithNums);
-
-        try {
-            PathFileWriter.write( mapper.writeValueAsString(selectWithPathNum) + "\n");
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
+        PathFileWriter.write( strTofile.toString());
     }
 
-    /**
-     * Gets the paths from defined XML file.
-     * @param line
-     * @param pathsMap
-     */
-    public static void generate(String line, PathsMap pathsMap){
-        if(line.contains("<sqlSelect>")){
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+    public static ArrayList<SelectWithPaths> generate(String line, PathsMap pathsMap, String queryStmt){
+        ArrayList<SelectWithPaths> selectsWithPaths = new ArrayList<>();
+
+        if(line.length() > mainTagLength){
             try {
                 DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
                 Document document = dBuilder.parse(new InputSource(new StringReader(line)));
-                NodeList nodeList = document.getElementsByTagName("sqlStatement");
+                NodeList nodeList = document.getElementsByTagName(queryStmt);
                 String selectCode = document.getElementsByTagName("selectCode").item(0).getFirstChild().getNodeValue();
+                int id = Integer.parseInt(document.getElementsByTagName("rowId").item(0).getFirstChild().getNodeValue());
 
-                for(int i = 0; i < nodeList.getLength(); i++)
-                    writeToFile(new SelectWithTree((Element)nodeList.item(i), selectCode), pathsMap);
+                for(int i = 0; i < nodeList.getLength(); i++){
+                    ArrayList<String> pathsInTree = new ArrayList<>();
+                    XmlTreeView.getLeafPaths((Element)nodeList.item(i), new StringBuilder(), pathsInTree);
+                    selectsWithPaths.add(new SelectWithPaths(id, selectCode, pathsInTree));
+                }
+
+                writeToFile(selectsWithPaths, pathsMap);
 
             } catch (ParserConfigurationException e) {
                 e.printStackTrace();
@@ -81,5 +83,6 @@ public class PathGenerator {
                 e.printStackTrace();
             }
         }
+        return selectsWithPaths;
     }
 }

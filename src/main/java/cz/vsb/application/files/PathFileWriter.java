@@ -5,7 +5,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class PathFileWriter {
-
     private static BufferedWriter bufferedWriter;
 
     public static synchronized void write(String str){
@@ -16,9 +15,9 @@ public class PathFileWriter {
         }
     }
 
-    public static void startWriting(){
+    public static void startWriting(String path){
         try {
-            bufferedWriter = new BufferedWriter(new FileWriter("data/outputPaths2.txt", true));
+            bufferedWriter = new BufferedWriter(new FileWriter(path, true));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -32,5 +31,3 @@ public class PathFileWriter {
         }
     }
 }
-
-

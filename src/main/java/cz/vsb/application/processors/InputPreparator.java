@@ -1,7 +1,7 @@
 package cz.vsb.application.processors;
 
-import cz.vsb.database.Path;
-import cz.vsb.database.PathDAO;
+import cz.vsb.application.files.InputFileReader;
+import cz.vsb.application.files.PropertyLoader;
 import cz.vsb.grammars.*;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ConsoleErrorListener;
@@ -18,39 +18,38 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import static org.antlr.v4.runtime.CharStreams.fromString;
 
 public class InputPreparator {
 
-    private static ArrayList<String> inputPathsNum = new ArrayList<>();
+    private static HashSet<Integer> inputHash = new HashSet<>();
 
-    /**
-     * Prepares input for defined query and grammar. Gets the derivative tree for query and gets the query paths.
-     * @param query
-     * @param grammar
-     */
-    public static void prepareInput(String query, int grammar){
+    public static void prepareInput(String query, char grammar, String queryStmt){
         ParseTree parseTree = null;
         Parser parser = null;
         query = query.toUpperCase();
 
-        if(grammar == 0){
+        if(grammar == '0'){
             MySqlLexer lexer = new MySqlLexer(fromString(query));
             parser = new MySqlParser(new CommonTokenStream(lexer));
             parseTree = ((MySqlParser)parser).root();
         }
-        else if(grammar == 1){
+        else if(grammar == '1'){
             SQLiteLexer lexer = new SQLiteLexer(fromString(query));
             parser = new SQLiteParser(new CommonTokenStream(lexer));
             parseTree = ((SQLiteParser)parser).parse();
         }
-        else if(grammar == 2){
+        else if(grammar == '2'){
             TSqlLexer lexer = new TSqlLexer(fromString(query));
             parser = new TSqlParser(new CommonTokenStream(lexer));
             parseTree = ((TSqlParser)parser).tsql_file();
         }
-        else if(grammar == 3){
+        else if(grammar == '3'){
             PlSqlLexer lexer = new PlSqlLexer(fromString(query));
             parser = new PlSqlParser(new CommonTokenStream(lexer));
             parseTree = ((PlSqlParser)parser).sql_script();
@@ -59,7 +58,7 @@ public class InputPreparator {
         if(parseTree != null && parser.getNumberOfSyntaxErrors() == 0){
             ResultPreparator resultPreparator = new ResultPreparator();
             resultPreparator.prepareData(query, parseTree, parser);
-            prepareInputPaths(resultPreparator.getXmlData());
+            prepareInputPaths(resultPreparator.getXmlData(), queryStmt);
         }
     }
 
@@ -68,34 +67,24 @@ public class InputPreparator {
         parser.removeErrorListener(ConsoleErrorListener.INSTANCE);
     }
 
-    /**
-     * Makes paths for input derivation tree. Adds them into a variable list <code>inputPaths</code>.
-     * Gets a unique number for each path and adds them into variable list <code>inputPathsNum</code>.
-     * @param xmlTree
-     */
-    private static void prepareInputPaths(String xmlTree){
+    private static void prepareInputPaths(String xmlTree, String queryStmt){
         DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
         try {
+            ArrayList<String> inputPaths = new ArrayList<>();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             Document document = dBuilder.parse(new InputSource(new StringReader(xmlTree)));
-            ArrayList<String> inputPaths = new ArrayList<>();
-            XmlTreeView.getLeafPaths((Element)(document.getElementsByTagName("sqlStatement").item(0)), new StringBuilder(), inputPaths);
+            XmlTreeView.getLeafPaths((Element)(document.getElementsByTagName(queryStmt).item(0)), new StringBuilder(), inputPaths);
+            HashSet<String> inputHashStr = new HashSet<>();
 
-            Integer num;
-            Integer maxNum = PathDAO.selectMaxID()+1;
-
-            for(String strPath : inputPaths){
-                Path path = PathDAO.select(strPath);
-                if(path != null){
-                    num = path.getPathID();
+            for(String s : inputPaths){
+                int i = 0;
+                while(inputHashStr.contains(s+ "." + i)){
+                    i++;
                 }
-                else{
-                    num = maxNum;
-                    maxNum++;
-                }
-
-                inputPathsNum.add(num.toString());
+                inputHashStr.add(s+ "." + i);
             }
+
+            getPathsIDs(inputHashStr);
         } catch (ParserConfigurationException e) {
             e.printStackTrace();
         } catch (SAXException e) {
@@ -105,7 +94,20 @@ public class InputPreparator {
         }
     }
 
-    public static ArrayList<String> getInputPaths(){
-        return inputPathsNum;
+    private static void getPathsIDs(HashSet<String> inputHashStr){
+        Stream<String> lines = InputFileReader.readFile(PropertyLoader.loadProperty("pathToIdFile"));
+
+        lines.forEach(s ->{
+            String[] splittedLine = s.split("__");
+            if(inputHashStr.contains(splittedLine[0])) {
+                synchronized (inputHash) {
+                    inputHash.add(Integer.parseInt(splittedLine[1]));
+                }
+            }
+        });
+    }
+
+    public static HashSet<Integer> getInputPaths(){
+        return inputHash;
     }
 }

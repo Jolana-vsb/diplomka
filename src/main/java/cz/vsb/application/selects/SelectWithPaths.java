@@ -4,23 +4,25 @@ import java.util.ArrayList;
 
 public class SelectWithPaths {
 
-    private String select;
+    private int id;
+    private String query;
     private ArrayList<String> paths;
 
-    public SelectWithPaths(){
-
-    }
-
-    public SelectWithPaths(String select, ArrayList<String> paths) {
-        this.select = select;
+    public SelectWithPaths(int id, String query, ArrayList<String> paths) {
+        this.id = id;
+        this.query = query;
         this.paths = paths;
     }
 
-    public String getSelect() {
-        return select;
+    public String getQuery() {
+        return query;
     }
 
     public ArrayList<String> getPaths() {
         return paths;
+    }
+
+    public int getId(){
+        return id;
     }
 }

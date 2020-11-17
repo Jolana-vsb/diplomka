@@ -2,70 +2,100 @@ package cz.vsb.application;
 
 import cz.vsb.application.files.InputFileReader;
 import cz.vsb.application.files.PathFileWriter;
-import cz.vsb.application.processors.*;
+import cz.vsb.application.files.PropertyLoader;
+import cz.vsb.application.processors.InputPreparator;
+import cz.vsb.application.processors.PathGenerator;
+import cz.vsb.application.processors.PathsMap;
+import cz.vsb.application.processors.SimilarityCalculator;
 import cz.vsb.application.selects.SelectComparator;
 import cz.vsb.application.selects.SelectWithSimilarity;
-import cz.vsb.database.Database;
-import cz.vsb.database.Path;
-import cz.vsb.database.PathDAO;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.IOException;
-import java.io.StringReader;
 import java.util.*;
 import java.util.stream.Stream;
 
-public class Application {
-
-    private static ArrayList<String> inputPathsNums = new ArrayList<>();
+public class Application{
 
     public static void runApplication(){
-        Database.setConnectionString();
-        //writePathsTofile();
-        calculateSimilarity();
-        //clearPathTable();
+
+        char grammar = PropertyLoader.loadProperty("grammar").charAt(0);
+        String queryStmt = getStmtName(grammar);
+
+        if(Boolean.parseBoolean(PropertyLoader.loadProperty("generatePathsFile")))
+            writePathsTofile(queryStmt);
+        calculateSimilarity(grammar, queryStmt);
     }
 
-    private static void writePathsTofile(){
+    private static void writePathsTofile(String queryStmt){
+        long start = System.currentTimeMillis();
+
         PathsMap pathsMap = new PathsMap();
-        PathFileWriter.startWriting();
+        Stream<String> lines = InputFileReader.readFile(PropertyLoader.loadProperty("inputXmlFile"));
 
-        Stream<String> lines = InputFileReader.readFile("data/MySQL.xml");
+        PathFileWriter.startWriting(PropertyLoader.loadProperty("selectsFile"));
         lines.forEach(e ->{
-            PathGenerator.generate(e, pathsMap);
+            PathGenerator.generate(e, pathsMap, queryStmt);
         });
-
         PathFileWriter.stopWriting();
-        PathDAO.insert(pathsMap.pathsWithNums);
+
+        PathFileWriter.startWriting(PropertyLoader.loadProperty("pathToIdFile"));
+        pathsMap.pathsWithNums.forEach((k,v)->{
+            PathFileWriter.write(k + "__" + v + "\n");
+        });
+        PathFileWriter.stopWriting();
+
+        long finish = System.currentTimeMillis();
+        System.out.println("Writing time: " + (finish-start) + "ms");
     }
 
-    private static void calculateSimilarity(){
-        InputPreparator.prepareInput("SELECT * FROM products WHERE (price BETWEEN 1.0 AND 2.0) AND (quantity BETWEEN 1000 AND 2000)", 0);
+    private static void calculateSimilarity(char grammar, String quieryStmt){
+        long start = System.currentTimeMillis();
+        InputPreparator.prepareInput(PropertyLoader.loadProperty("inputQuery"), grammar, quieryStmt);
+        long finish = System.currentTimeMillis();
+        System.out.println("Prepare time: " + (finish-start) + "ms");
 
-        Vector<SelectWithSimilarity> resultList = new Vector<>();
+        List<SelectWithSimilarity> resultList = Collections.synchronizedList(new ArrayList<>());
 
-        Stream<String> lines = InputFileReader.readFile("data/outputPaths2.txt");
+        start = System.currentTimeMillis();
+        Stream<String> lines = InputFileReader.readFile(PropertyLoader.loadProperty("selectsFile"));
+        finish = System.currentTimeMillis();
+        System.out.println("Reading file time: " + (finish-start) + "ms");
+
+        start = System.currentTimeMillis();
         lines.forEach(e ->{
             SelectWithSimilarity selectWithSimilarity = new SimilarityCalculator(e, InputPreparator.getInputPaths()).calculate();
             resultList.add(selectWithSimilarity);
         });
+        finish = System.currentTimeMillis();
+        System.out.println("Computing time: " + (finish-start) + "ms");
 
-        //System.out.println("res " + resultList.size());
 
+        start = System.currentTimeMillis();
         Collections.sort(resultList, new SelectComparator());
 
-        for(int i = 0; i < 10; i++){
+        finish = System.currentTimeMillis();
+        System.out.println("Sorting time: " + (finish-start) + "ms");
+
+        for(int i = 0; i < 20; i++){
             System.out.println(resultList.get(i).getQuery());
             System.out.println(resultList.get(i).getSimilarity());
         }
     }
 
-    private static void clearPathTable(){
-        PathDAO.clearTable();
+    private static String getStmtName(char grammar){
+        String queryStmt = null;
+        switch(grammar) {
+            case '0':
+                queryStmt = "sqlStatement";
+                break;
+            case '1':
+                queryStmt = "sql_stmt";
+                break;
+            case '2':
+                queryStmt = "sql_stmt";
+                break;
+            case '3':
+                queryStmt = "sql_stmt";
+                break;
+        }
+        return queryStmt;
     }
 }

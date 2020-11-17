@@ -218,7 +218,6 @@ cz\vsb\grammars\TSqlParser$Auto_optionContext.class
 cz\vsb\grammars\PlSqlParser$Dml_event_nested_clauseContext.class
 cz\vsb\grammars\MySqlParser$CreateLogfileGroupContext.class
 cz\vsb\grammars\PlSqlParser$Table_ref_aux_internal_threeContext.class
-cz\vsb\application\selects\SelectWithTree.class
 cz\vsb\grammars\PlSqlParser$Alter_collection_clausesContext.class
 cz\vsb\grammars\PlSqlParser$Subquery_operation_partContext.class
 cz\vsb\grammars\PlSqlParser$Element_spec_optionsContext.class
@@ -379,6 +378,7 @@ cz\vsb\grammars\TSqlParser$Dbcc_clauseContext.class
 cz\vsb\grammars\PlSqlParser$Drop_functionContext.class
 cz\vsb\grammars\MySqlParser$DropDatabaseContext.class
 cz\vsb\grammars\TSqlParser$Exist_methodContext.class
+cz\vsb\application\files\PropertyLoader.class
 cz\vsb\grammars\MySqlParser$CommentColumnConstraintContext.class
 cz\vsb\grammars\TSqlParser$Create_certificateContext.class
 cz\vsb\grammars\MySqlParser$PasswordFunctionCallContext.class
@@ -614,7 +614,6 @@ cz\vsb\grammars\MySqlParser$InnerJoinContext.class
 cz\vsb\grammars\PlSqlParser$Between_boundContext.class
 cz\vsb\grammars\PlSqlParser$Map_order_function_specContext.class
 cz\vsb\grammars\PlSqlParser$ParameterContext.class
-cz\vsb\application\selects\SelectWithPathNum.class
 cz\vsb\grammars\TSqlParser$Create_ruleContext.class
 cz\vsb\grammars\MySqlParser$GtidsUntilOptionContext.class
 cz\vsb\grammars\PlSqlParser$For_update_of_partContext.class
@@ -632,7 +631,6 @@ cz\vsb\grammars\TSqlParser$Database_optionspecContext.class
 cz\vsb\grammars\MySqlParser$DefiniteSchemaPrivLevelContext.class
 cz\vsb\grammars\MySqlParser$ShowCreateUserContext.class
 cz\vsb\grammars\MySqlParser$UserPasswordOptionContext.class
-cz\vsb\database\Path.class
 cz\vsb\grammars\TSqlParser$Drop_ruleContext.class
 cz\vsb\grammars\PlSqlParser$Split_index_partitionContext.class
 cz\vsb\grammars\PlSqlParser$Error_logging_clauseContext.class
@@ -955,7 +953,6 @@ cz\vsb\grammars\TSqlParser$Create_routeContext.class
 cz\vsb\grammars\TSqlParser$Drop_schemaContext.class
 cz\vsb\grammars\PlSqlParser$Physical_attributes_clauseContext.class
 cz\vsb\grammars\PlSqlParser$Disable_constraintContext.class
-cz\vsb\database\Database.class
 cz\vsb\grammars\TSqlParser$File_pathContext.class
 cz\vsb\grammars\MySqlParser$HandlerStatementContext.class
 cz\vsb\grammars\PlSqlParser$Table_ref_auxContext.class
@@ -1475,7 +1472,6 @@ cz\vsb\grammars\PlSqlParser$Unique_key_clauseContext.class
 cz\vsb\grammars\TSqlParser$Change_tracking_optionContext.class
 cz\vsb\grammars\MySqlParser$LevelsInWeightStringContext.class
 cz\vsb\grammars\PlSqlParser$Else_partContext.class
-cz\vsb\database\PathDAO.class
 cz\vsb\grammars\PlSqlParser$Model_expressionContext.class
 cz\vsb\grammars\TSqlParser$External_access_optionContext.class
 cz\vsb\grammars\MySqlParser$AlterViewContext.class
